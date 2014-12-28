@@ -7,45 +7,9 @@
 #include <iterator>
 #include <atomic>
 #include "../Artificial_Intelligence_A_Modern_Approach/search.hpp"
-enum class color { red, green, blue, yellow, orange, white };
+enum class color { red, green, blue, yellow, orange, white, wildcard };
 constexpr size_t cube_length = 3;/*Change rotate and position
                                   *if you want to change this*/
-static const std::array< std::array< double, cube_length >, cube_length > front_misplaced_penalty =
-{{
-    {{ 10000, 10000, 10000 }},
-    {{ 10000, 10000, 10000 }},
-    {{ 10000, 10000, 10000 }}
-}};
-static const std::array< std::array< double, cube_length >, cube_length > back_misplaced_penalty =
-{{
-    {{ 0, 0, 0 }},
-    {{ 0, 0, 0 }},
-    {{ 0, 0, 0 }}
-}};
-static const std::array< std::array< double, cube_length >, cube_length > down_misplaced_penalty =
-{{
-    {{ 100, 100, 100 }},
-    {{   1,   1,   1 }},
-    {{ .01, .01, .01 }}
-}};
-static const std::array< std::array< double, cube_length >, cube_length > left_misplaced_penalty =
-{{
-    {{ .01, 1, 100 }},
-    {{ .01, 1, 100 }},
-    {{ .01, 1, 100 }}
-}};
-static const std::array< std::array< double, cube_length >, cube_length > right_misplaced_penalty =
-{{
-    {{ 100, 1, .01 }},
-    {{ 100, 1, .01 }},
-    {{ 100, 1, .01 }}
-}};
-static const std::array< std::array< double, cube_length >, cube_length > up_misplaced_penalty =
-{{
-    {{ .01, .01, .01 }},
-    {{   1,   1,   1 }},
-    {{ 100, 100, 100 }}
-}};
 template< typename OS >
 OS & operator << ( OS & os, color c )
 {
@@ -143,6 +107,7 @@ void swap( T & t1, T & t2, T & t3, T & t4 ) noexcept(noexcept(std::swap(t1, t2))
     t4 = std::move( tmp );
 }
 
+template< typename color >
 struct faces
 {
     std::array< std::array< color, cube_length >, cube_length > data;
@@ -172,23 +137,9 @@ struct faces
         rotate_counter_clockwise( );
         rotate_counter_clockwise( );
     }
-    double misplaced_square_penalty(
-        color original_color, const std::array< std::array< double, cube_length >, cube_length > & p ) const
-    {
-        auto ran = make_iterator_iterator( data.begin( ), data.end( ) );
-        auto ran2 = make_iterator_iterator( p.begin( ), p.end( ) );
-        auto it = ran.first;
-        double acc = 0;
-        for ( double pen : make_range_container_proxy( ran2.first, ran2.second ) )
-        {
-            acc += (*it == original_color ? 0.0 : pen);
-            ++it;
-        }
-        return acc;
-    }
-    bool operator < ( const faces & cmp ) const { return data < cmp.data; }
     bool operator == ( const faces & cmp ) const { return data == cmp.data; }
-    bool is_fix( color original_color ) const
+    bool operator < ( const faces & cmp ) const { return data < cmp.data; }
+    bool is_fix( const color & original_color ) const
     {
         auto ran = make_iterator_iterator( data.begin( ), data.end( ) );
         return std::all_of(
@@ -200,37 +151,59 @@ struct faces
 
 struct move
 {
-    enum which_face { left, right, front, back, up, down, middle, equator, standing } wf;
-    enum degree { clockwise, counter_clockwise, flip } dg;
-    move( which_face wf, degree dg ) : wf( wf ), dg( dg ) { }
+    enum { left, right, front, back, up, down, middle, equator, standing } position;
+    enum { clockwise, counter_clockwise, flip } degree;
+};
+
+struct position
+{
+    enum { left, right, front, back, up, down } face;
+    std::pair< size_t, size_t > coordinate;
 };
 
 template< typename OS >
 OS & operator << ( OS & os, const move & m )
 {
     return os << (
-        m.wf == move::left ? 'L' :
-        m.wf == move::right ? 'R' :
-        m.wf == move::front ? 'F' :
-        m.wf == move::back ? 'B' :
-        m.wf == move::up ? 'U' :
-        m.wf == move::down ? 'D' :
-        m.wf == move::middle ? 'M' :
-        m.wf == move::equator ? 'E' : 'S' ) << (
-            m.dg == move::clockwise ? ' ' :
-            m.dg == move::counter_clockwise ? '\'' : '2' );
+        m.position == move::left ? 'L' :
+        m.position == move::right ? 'R' :
+        m.position == move::front ? 'F' :
+        m.position == move::back ? 'B' :
+        m.position == move::up ? 'U' :
+        m.position == move::down ? 'D' :
+        m.position == move::middle ? 'M' :
+        m.position == move::equator ? 'E' : 'S' ) << (
+            m.degree == move::clockwise ? ' ' :
+            m.degree == move::counter_clockwise ? '\'' : '2' );
 }
 
+template< typename color >
 struct cube
 {
-    faces front, back, left, right, up, down;
+    faces< color > front, back, left, right, up, down;
+
+    template< typename IT >
+    void make_moves( IT begin, IT end )
+    { std::for_each( begin, end, [this]( const move & m ) { make_move( m ); } ); }
+
+    template< typename IT >
+    void undo_moves( IT begin, IT end )
+    { std::for_each( begin, end, [this]( const move & m ) { undo_move( m ); } ); }
+
+    void undo_move( const move & m )
+    {
+        make_move( m );
+        make_move( m );
+        make_move( m );
+    }
+
     void make_move( const move & m )
     {
-        size_t repeat = m.dg == m.clockwise ? 1 : m.dg == m.flip ? 2 : 3;
+        size_t repeat = m.degree == m.clockwise ? 1 : m.degree == m.flip ? 2 : 3;
         while ( repeat != 0 )
         {
             --repeat;
-            switch ( m.wf )
+            switch ( m.position )
             {
                 case move::front:
                     front.rotate_clockwise( );
@@ -331,28 +304,20 @@ struct cube
             }
         }
     }
-    bool is_fix( ) const
+    bool is_fix( const color & front_color, const color & back_color, const color & left_color,
+                 const color & right_color, const color & up_color, const color & down_color ) const
     {
         return
-            front.is_fix( color::blue ) && back.is_fix( color::green ) && left.is_fix( color::orange ) &&
-            right.is_fix( color::red ) && up.is_fix( color::white ) && down.is_fix( color::yellow );
-    }
-    double misplaced_square_penalty( ) const
-    {
-        return
-                front.misplaced_square_penalty( color::blue, front_misplaced_penalty ) +
-                back.misplaced_square_penalty( color::green, back_misplaced_penalty ) +
-                left.misplaced_square_penalty( color::orange, left_misplaced_penalty ) +
-                right.misplaced_square_penalty( color::red, right_misplaced_penalty ) +
-                up.misplaced_square_penalty( color::white, up_misplaced_penalty ) +
-                down.misplaced_square_penalty( color::yellow, down_misplaced_penalty );
+            front.is_fix( front_color ) && back.is_fix( back_color ) && left.is_fix( left_color ) &&
+            right.is_fix( right_color ) && up.is_fix( up_color ) && down.is_fix( down_color );
     }
     auto tie( ) const { return std::tie( front, back, left, right, up, down ); }
     bool operator < ( const cube & cmp ) const { return tie( ) < cmp.tie( ); }
     bool operator == ( const cube & cmp ) const { return tie( ) == cmp.tie( ); }
-    cube( ) :
-        front( color::blue ), back( color::green ), left( color::orange ),
-        right( color::red ), up( color::white ), down( color::yellow ) { }
+    cube( faces< color > && front, faces< color > && back, faces< color > && left,
+          faces< color > && right, faces< color > && up, faces< color > && down ) :
+        front( std::move( front ) ), back( std::move( back ) ), left( std::move( left ) ),
+        right( std::move( right ) ), up( std::move( up ) ), down( std::move( down ) ) { }
     template< typename OS >
     friend OS & operator << ( OS & os, const cube & c )
     {
@@ -404,11 +369,11 @@ const std::vector< move > & all_moves( )
         {
             std::vector< move > inner;
             auto f =
-                [&inner]( move::which_face wf )
+                [&inner]( auto wf )
                 {
-                    inner.push_back( move( wf, move::clockwise ) );
-                    inner.push_back( move( wf, move::counter_clockwise ) );
-                    inner.push_back( move( wf, move::flip ) );
+                    inner.push_back( move { wf, move::clockwise } );
+                    inner.push_back( move { wf, move::counter_clockwise } );
+                    inner.push_back( move { wf, move::flip } );
                 };
             f( move::back );
             f( move::front );
@@ -424,110 +389,224 @@ const std::vector< move > & all_moves( )
     return ret;
 }
 
-template< size_t N >
-const std::vector< std::vector< move > > & generate( )
-{
-    static const std::vector< std::vector< move > > ret(
-            []( )
-            {
-                const auto & smaller = generate< N - 1 >( );
-                std::vector< std::vector< move > > inner;
-                for ( const std::vector< move > & m : smaller )
-                {
-                    for ( const move & mv : all_moves( ) )
-                    {
-                        auto vm = m;
-                        vm.push_back( mv );
-                        inner.push_back( vm );
-                    }
-                    inner.push_back( m );
-                }
-                return inner;
-            }( ) );
-    return ret;
-}
-
-template< >
-const std::vector< std::vector< move > > & generate< 0 >( )
-{
-    static const std::vector< std::vector< move > > ret = { { } };
-    return ret;
-}
-
 int main( )
 {
-    cube c;
-    c.make_move( move( move::up, move::clockwise ) );
-    c.make_move( move( move::right, move::flip ) );
-    c.make_move( move( move::front, move::clockwise ) );
-    c.make_move( move( move::back, move::clockwise ) );
-    c.make_move( move( move::right, move::clockwise ) );
-    c.make_move( move( move::back, move::flip ) );
-    c.make_move( move( move::right, move::clockwise ) );
-    c.make_move( move( move::up, move::flip ) );
-    c.make_move( move( move::left, move::clockwise ) );
-    c.make_move( move( move::back, move::flip ) );
-    c.make_move( move( move::right, move::clockwise ) );
-    c.make_move( move( move::up, move::counter_clockwise ) );
-    c.make_move( move( move::down, move::counter_clockwise ) );
-    c.make_move( move( move::right, move::flip ) );
-    c.make_move( move( move::front, move::clockwise ) );
-    c.make_move( move( move::right, move::counter_clockwise ) );
-    c.make_move( move( move::left, move::clockwise ) );
-    c.make_move( move( move::back, move::flip ) );
-    c.make_move( move( move::up, move::flip ) );
-    c.make_move( move( move::front, move::flip ) );
-    double best = std::numeric_limits< double >::max( );
-    std::vector< std::vector< move > > ret;
-    std::atomic_bool b;
-    std::thread t(
-        [&]( ){ while ( true )
-        {
-            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-            b = true;
-        } } );
-    std::cout << c.misplaced_square_penalty( ) << std::endl;
-    A_star< std::vector< move > >(
-        c,
-        static_cast< size_t >( 0 ),
-        []( const cube &, auto it )
-        {
-            for ( const std::vector< move > & p : generate< 4 >( ) )
-            {
-                *it = std::make_pair( p, 0.1 );
-                ++it;
-            }
-        },
-        [&]( cube c, const std::vector< move > & m )
-        {
-            for ( move mm : m ) { c.make_move( mm ); }
-            if ( c.misplaced_square_penalty( ) < best )
-            {
-                best = c.misplaced_square_penalty( );
-                std::cout << "new champion found" << std::endl
-                          << c << "score is" << best << std::endl;
-                std::cin.get( );
-            }
-            if ( b )
-            {
-                b = ! b;
-                std::cout << c << c.misplaced_square_penalty( ) << std::endl;
-            }
-            return c;
-        },
-        []( const cube & c ) { return c.misplaced_square_penalty( ); },
-        []( const cube & c ) { return c.is_fix( ); },
-        []( auto ){ },
-        std::back_insert_iterator< decltype( ret ) >( ret ) );
-    auto r = make_iterator_iterator( ret.begin( ), ret.end( ) );
-    for ( const move & m : make_range_container_proxy( r.first, r.second ) )
+    cube< color > c(
+        faces< color > { color::blue },
+        faces< color > { color::green },
+        faces< color > { color::orange },
+        faces< color > { color::red },
+        faces< color > { color::white },
+        faces< color > { color::yellow } );
+    std::vector< move > moves =
     {
-        std::cout << m << ' ';
-        c.make_move( m );
+        { move::up, move::clockwise },
+        { move::right, move::flip },
+        { move::front, move::clockwise },
+        { move::back, move::clockwise },
+        { move::right, move::clockwise },
+        { move::back, move::flip },
+        { move::right, move::clockwise },
+        { move::up, move::flip },
+        { move::left, move::clockwise },
+        { move::back, move::flip },
+        { move::right, move::clockwise },
+        { move::up, move::counter_clockwise },
+        { move::down, move::counter_clockwise },
+        { move::right, move::flip },
+        { move::front, move::clockwise },
+        { move::right, move::counter_clockwise },
+        { move::left, move::clockwise },
+        { move::back, move::flip },
+        { move::up, move::flip },
+        { move::front, move::flip }
+    };
+    c.make_moves( moves.begin( ), moves.end( ) );
+    using wild_cube = cube< std::set< color > >;
+    auto make_wild_cube = []( ) -> wild_cube
+    {
+        return
+        {
+            faces< std::set< color > > { { } },
+            faces< std::set< color > > { { } },
+            faces< std::set< color > > { { } },
+            faces< std::set< color > > { { } },
+            faces< std::set< color > > { { } },
+            faces< std::set< color > > { { } }
+        };
+    };
+    std::list< wild_cube > middle_steps =
+    {
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( )
+    };
+    auto it = middle_steps.begin( ), end = middle_steps.end( );
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.front[1][0] =
+            wc.front[1][1] =
+            wc.front[1][2] =
+            wc.front[0][1] =
+            wc.front[2][1] =
+            { c.front[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.front[0][2] =
+            wc.front[2][0] =
+            wc.front[0][0] =
+            wc.front[2][2] =
+            { c.front[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.right[0][0] =
+            wc.right[1][0] =
+            wc.right[2][0] =
+            { c.right[1][1] };
+            wc.left[0][2] =
+            wc.left[1][2] =
+            wc.left[2][2] =
+            { c.left[1][1] };
+            wc.up[2][0] =
+            wc.up[2][1] =
+            wc.up[2][2] =
+            { c.up[1][1] };
+            wc.down[0][0] =
+            wc.down[0][1] =
+            wc.down[0][2] =
+            { c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.down[1][0] =
+            wc.down[1][2] =
+            { c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.up[1][0] =
+            wc.up[1][2] =
+            { c.up[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.down[2][1] =
+            { c.down[1][1] };
+            wc.up[0][1] =
+            { c.up[1][1] };
+            wc.left[0][1] =
+            { c.left[1][1] };
+            wc.right[0][1] =
+            { c.right[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.back[1][0] =
+            wc.back[1][1] =
+            wc.back[1][2] =
+            wc.back[0][1] =
+            wc.back[2][1] =
+            { c.back[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.back[0][0] =
+            wc.left[2][0] =
+            wc.down[2][0] =
+            { c.back[1][1], c.left[1][1], c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.back[0][2] =
+            wc.right[2][2] =
+            wc.down[2][2] =
+            { c.back[1][1], c.right[1][1], c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.back[0][0] =
+            { c.back[1][1] };
+        } );
+    auto all_action =
+        []( const wild_cube &, auto it ){ std::copy( all_moves( ).begin( ), all_moves( ).end( ), it ); };
+    auto f1 =
+        []( wild_cube c, move m )
+        {
+            c.make_move( m );
+            return c;
+        };
+    std::list< wild_cube > finished_middle_steps = middle_steps;
+    for ( wild_cube & c : middle_steps ) { c.make_moves( moves.begin( ), moves.end( ) ); }
+    while ( ! middle_steps.empty( ) )
+    {
+        std::list< move > forward, backward;
+        biderectional_breadth_first_search< move, move >(
+            middle_steps.front( ),
+            finished_middle_steps.front( ),
+            all_action,
+            f1,
+            std::back_insert_iterator< decltype( forward ) >( forward ),
+            all_action,
+            f1,
+            std::back_insert_iterator< decltype( backward ) >( backward ) );
+        c.make_moves( forward.begin( ), forward.end( ) );
+        c.undo_moves( backward.rbegin( ), backward.rend( ) );
+        std::cout << c << std::endl;
+        middle_steps.pop_front( );
+        finished_middle_steps.pop_front( );
+        for ( wild_cube & wc : middle_steps )
+        {
+            wc.make_moves( forward.begin( ), forward.end( ) );
+            wc.undo_moves( backward.rbegin( ), backward.rend( ) );
+        }
     }
-    std::cout << std::endl;
-    t.detach( );
-    std::cout << c << std::endl;
-    assert( c.is_fix( ) );
     return 0;
 }
