@@ -446,6 +446,11 @@ int main( )
         make_wild_cube( ),
         make_wild_cube( ),
         make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
+        make_wild_cube( ),
         make_wild_cube( )
     };
     auto it = middle_steps.begin( ), end = middle_steps.end( );
@@ -454,9 +459,196 @@ int main( )
         end,
         [&]( wild_cube & wc )
         {
-            wc.front[1][0] =
             wc.front[1][1] =
+            { c.front[1][1] };
+            wc.back[1][1] =
+            { c.back[1][1] };
+            wc.left[1][1] =
+            { c.left[1][1] };
+            wc.right[1][1] =
+            { c.right[1][1] };
+            wc.up[1][1] =
+            { c.up[1][1] };
+            wc.down[1][1] =
+            { c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.down[0][0] =
+            wc.down[0][2] =
+            wc.down[2][0] =
+            wc.down[2][2] =
+            { c.down[1][1] };
+            wc.front[2][0] =
+            wc.front[2][2] =
+            { c.front[1][1] };
+            wc.left[2][0] =
+            wc.left[2][2] =
+            { c.left[1][1] };
+            wc.right[2][0] =
+            wc.right[2][2] =
+            { c.right[1][1] };
+            wc.back[0][0] =
+            wc.back[0][2] =
+            { c.back[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.up[0][0] =
+            wc.up[0][2] =
+            wc.up[2][0] =
+            wc.up[2][2] =
+            { c.up[1][1] };
+            wc.front[0][0] =
+            wc.front[0][2] =
+            { c.front[1][1] };
+            wc.left[0][0] =
+            wc.left[0][2] =
+            { c.left[1][1] };
+            wc.right[0][0] =
+            wc.right[0][2] =
+            { c.right[1][1] };
+            wc.back[2][0] =
+            wc.back[2][2] =
+            { c.back[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.left[1][2] =
+            { c.left[1][1] };
+            wc.front[1][0] =
+            { c.front[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.left[2][1] =
+            { c.left[1][1] };
+            wc.down[1][0] =
+            { c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.left[1][0] =
+            { c.left[1][1] };
+            wc.back[1][0] =
+            { c.back[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.right[1][0] =
+            { c.right[1][1] };
             wc.front[1][2] =
+            { c.front[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.right[0][1] =
+            { c.right[1][1] };
+            wc.up[1][2] =
+            { c.up[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.right[2][1] =
+            { c.right[1][1] };
+            wc.down[1][2] =
+            { c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.right[1][2] =
+            { c.left[1][1] };
+            wc.back[1][2] =
+            { c.back[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.front[0][1] =
+            wc.front[2][1] =
+            {
+                c.front[1][1],
+                c.back[1][1]
+            };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.back[0][1] =
+            wc.back[2][1] =
+            {
+                c.front[1][1],
+                c.back[1][1]
+            };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.up[0][1] =
+            wc.up[2][1] =
+            { c.up[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
+            wc.down[0][1] =
+            wc.down[2][1] =
+            { c.down[1][1] };
+        } );
+    ++it;
+    std::for_each(
+        it,
+        end,
+        [&]( wild_cube & wc )
+        {
             wc.front[0][1] =
             wc.front[2][1] =
             { c.front[1][1] };
@@ -467,116 +659,13 @@ int main( )
         end,
         [&]( wild_cube & wc )
         {
-            wc.front[0][2] =
-            wc.front[2][0] =
-            wc.front[0][0] =
-            wc.front[2][2] =
-            { c.front[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.right[0][0] =
-            wc.right[1][0] =
-            wc.right[2][0] =
-            { c.right[1][1] };
-            wc.left[0][2] =
-            wc.left[1][2] =
-            wc.left[2][2] =
-            { c.left[1][1] };
-            wc.up[2][0] =
-            wc.up[2][1] =
-            wc.up[2][2] =
-            { c.up[1][1] };
-            wc.down[0][0] =
-            wc.down[0][1] =
-            wc.down[0][2] =
-            { c.down[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.down[1][0] =
-            wc.down[1][2] =
-            { c.down[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.up[1][0] =
-            wc.up[1][2] =
-            { c.up[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.down[2][1] =
-            { c.down[1][1] };
-            wc.up[0][1] =
-            { c.up[1][1] };
-            wc.left[0][1] =
-            { c.left[1][1] };
-            wc.right[0][1] =
-            { c.right[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.back[1][0] =
-            wc.back[1][1] =
-            wc.back[1][2] =
             wc.back[0][1] =
             wc.back[2][1] =
             { c.back[1][1] };
         } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.back[0][0] =
-            wc.left[2][0] =
-            wc.down[2][0] =
-            { c.back[1][1], c.left[1][1], c.down[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.back[0][2] =
-            wc.right[2][2] =
-            wc.down[2][2] =
-            { c.back[1][1], c.right[1][1], c.down[1][1] };
-        } );
-    ++it;
-    std::for_each(
-        it,
-        end,
-        [&]( wild_cube & wc )
-        {
-            wc.back[0][0] =
-            { c.back[1][1] };
-        } );
+    assert( it == end );
     auto all_action =
-        []( const wild_cube &, auto it ){ std::copy( all_moves( ).begin( ), all_moves( ).end( ), it ); };
+        []( const wild_cube &, auto it ) { std::copy( all_moves( ).begin( ), all_moves( ).end( ), it ); };
     auto f1 =
         []( wild_cube c, move m )
         {
