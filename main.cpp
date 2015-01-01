@@ -677,7 +677,7 @@ int main( )
     while ( ! middle_steps.empty( ) )
     {
         std::list< move > forward, backward;
-        biderectional_breadth_first_search< move, move >(
+        AI::biderectional_breadth_first_search< move, move >(
             middle_steps.front( ),
             finished_middle_steps.front( ),
             all_action,
